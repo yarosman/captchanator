@@ -1,0 +1,7 @@
+# Routes
+# This file defines all application routes (Higher priority routes first)
+# ~~~~
+
+POST        /              @controllers.CaptchaController.create
+POST        /:reqId        @controllers.CaptchaController.solve(reqId: String)
+GET         /*file         @controllers.CaptchaController.get(file)
