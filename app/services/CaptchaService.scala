@@ -11,13 +11,13 @@ import nl.captcha.text.renderer.DefaultWordRenderer
 import utils.{ApplicationConfig, Logging}
 
 import scala.collection.JavaConversions._
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
   * @author Yaroslav Derman <yaroslav.derman@gmail.com>.
   *         created on 28.01.2017.
   */
-class CaptchaService @Inject()(appConf: ApplicationConfig) extends Logging {
+class CaptchaService @Inject()(appConf: ApplicationConfig)(implicit ctx: ExecutionContext) extends Logging {
 
   private val renderer = new DefaultWordRenderer(appConf.colors, appConf.fonts)
 
