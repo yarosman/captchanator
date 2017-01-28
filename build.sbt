@@ -1,6 +1,6 @@
 name := """captchanator"""
 
-version := "1.0-SNAPSHOT"
+version := sys.env.getOrElse("TRAVIS_TAG", sys.props.getOrElse("TRAVIS_TAG", "1.0.0-SNAPSHOT"))
 
 lazy val root = (project in file(".")).enablePlugins(PlayScala, SbtNativePackager)
 
