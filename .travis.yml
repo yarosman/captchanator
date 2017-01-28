@@ -14,11 +14,6 @@ cache:
 services:
   - docker
 
-notifications:
-  email:
-    recipients:
-      - yaroslav.derman@gmail.com
-
 script:
   - sbt test docker:publishLocal
 
