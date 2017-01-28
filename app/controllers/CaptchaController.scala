@@ -1,17 +1,15 @@
 package controllers
 
 import java.io.File
-import java.nio.file.Paths
 import javax.inject.{Inject, Singleton}
 
-import com.fotolog.redis.RedisClient
-import play.api.Logger
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.JsValue
 import play.api.mvc.{Action, Controller}
 import play.utils.UriEncoding
 import services.{CaptchaService, FileUploadingService}
-import utils.ApplicationConfig
 import utils.RequestHelper._
+import utils.{ApplicationConfig, Logging}
+
 import scala.concurrent.ExecutionContext
 
 /**
@@ -20,61 +18,48 @@ import scala.concurrent.ExecutionContext
   */
 @Singleton
 class CaptchaController @Inject()(appConf: ApplicationConfig,
-                                  captchaService: CaptchaService)(implicit ctx: ExecutionContext) extends Controller with FileUploadingService {
+                                  captchaService: CaptchaService)(implicit ctx: ExecutionContext)
+  extends Controller with FileUploadingService with Logging {
 
-  val log = Logger("captcha")
   log.info("Images folder: " + appConf.imageFolder)
 
-  val redis = RedisClient(appConf.redisHost)
-
   def create: Action[JsValue] = Action.async(parse.json) { r =>
-    val code = (r.body \ "code").asOpt[String].getOrElse((r.body \ "challenge").as[String])
+    val code = (r.body \ "challenge").as[String]
     val ttl = (r.body \ "ttl").asOpt[Int].getOrElse(appConf.captchaTtl)
 
     captchaService.create(code, ttl, r.clientIp).map {
-      case true => Ok(Json.obj("status" -> 0))
-      case false => Ok(Json.obj("status" -> -1))
+      case true => Ok
+      case false => BadRequest
     }
   }
 
-  def solve(code: String): Action[JsValue] = Action.async(parse.json) { r =>
+  def solve(challenge: String): Action[JsValue] = Action.async(parse.json) { r =>
     val answer = (r.body \ "answer").as[String]
     val ip = (r.body \ "ip").asOpt[String].getOrElse("")
-    val key = appConf.prefix + ip + "-" + code
 
-    redis.getAsync[String](key) map {
-      case Some(realAnsw) =>
-        new File(appConf.imageFolder + code + ".png").delete()
-        redis.delAsync(key)
+    captchaService.solve(challenge, answer, ip).map {
+      case true =>
+        log.info("Ok: " + challenge + ", ip: " + ip + ", answer: " + answer)
+        Ok
 
-        val matches = realAnsw.equals(answer)
-
-        if (matches) {
-          log.info("Ok: " + code + ", ip: " + ip + ", answer: " + answer)
-          Ok(Json.obj("correct" -> true))
-        } else {
-          log.info("Wrong: " + code + ", ip: " + ip + ", answer: " + answer)
-          Ok(Json.obj("correct" -> false))
-        }
-
-      case None =>
-        log.info("Not found: " + code + ", ip: " + ip + ", answer: " + answer)
-        NotFound
+      case false =>
+        log.info("Wrong: " + challenge + ", ip: " + ip + ", answer: " + answer)
+        PreconditionFailed
     }
   }
 
   def get(file: String) = Action { implicit req =>
     val fileName = UriEncoding.decodePath(file, "utf-8")
-    val f = new File(appConf.imageFolder + fileName)
+    val f = new File(appConf.imageFolder.resolve(fileName).toString)
 
-    if (f.exists && f.canRead && f.getCanonicalPath.startsWith(appConf.imageFolder)) {
+    if (f.exists && f.canRead) {
       log.info("Get file: " + f.getCanonicalPath + ", file: " + file)
-      sendFile(fileName, Paths.get(appConf.imageFolder + fileName))
+      sendFile(fileName, f.toPath)
     } else {
       if (!f.exists) log.warn("File " + f.getCanonicalPath + " not exists")
       else if (!f.canRead) log.warn("File " + f.getCanonicalPath + " is not readable")
       else {
-        log.warn("File " + f.getCanonicalPath + " path don't match: " + new File(appConf.imageFolder).getCanonicalPath)
+        log.warn("File " + f.getCanonicalPath + " path don't match: " + appConf.imageFolder.toAbsolutePath)
       }
       NotFound
     }
