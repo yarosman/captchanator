@@ -40,7 +40,7 @@ class ApplicationConfig @Inject()(configuration: Configuration) {
     case Some("italic") => Font.ITALIC
     case Some("bold italic") => Font.BOLD
     case Some("italic bold") => Font.ITALIC
-    case None => Font.PLAIN
+    case _ => Font.PLAIN
   }
 
 }

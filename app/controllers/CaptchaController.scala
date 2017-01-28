@@ -12,6 +12,7 @@ import play.utils.UriEncoding
 import services.{CaptchaService, FileUploadingService}
 import utils.ApplicationConfig
 import utils.RequestHelper._
+import scala.concurrent.ExecutionContext
 
 /**
   * @author Yaroslav Derman <yaroslav.derman@gmail.com>.
@@ -19,7 +20,7 @@ import utils.RequestHelper._
   */
 @Singleton
 class CaptchaController @Inject()(appConf: ApplicationConfig,
-                                  captchaService: CaptchaService) extends Controller with FileUploadingService {
+                                  captchaService: CaptchaService)(implicit ctx: ExecutionContext) extends Controller with FileUploadingService {
 
   val log = Logger("captcha")
   log.info("Images folder: " + appConf.imageFolder)
