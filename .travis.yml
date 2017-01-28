@@ -1,0 +1,29 @@
+sudo: required
+language: scala
+scala:
+  - 2.11.8
+jdk:
+  - oraclejdk8
+
+cache:
+  directories:
+    - $HOME/.m2/repository
+    - $HOME/.sbt
+    - $HOME/.ivy2
+
+services:
+  - docker
+
+notifications:
+  email:
+    recipients:
+      - yaroslav.derman@gmail.com
+
+script:
+  - sbt test docker:publishLocal
+
+after_success:
+  - if [ "${TRAVIS_BRANCH}" == "master" ] && ["${TRAVIS_PULL_REQUEST}" == 'false'] && "${TRAVIS_TAG}" != ''; then
+    docker login -e="$DOCKER_EMAIL" -u="$DOCKER_LOGIN" -p="$DOCKER_PASS";
+    docker push yarosman/captchanator:$TRAVIS_TAG;
+    fi
