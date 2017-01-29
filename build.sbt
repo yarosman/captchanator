@@ -1,6 +1,11 @@
 name := """captchanator"""
 
-version := sys.env.getOrElse("TRAVIS_TAG", sys.props.getOrElse("TRAVIS_TAG", "1.0.0-SNAPSHOT"))
+val revision = sys.env.getOrElse("TRAVIS_TAG", sys.props.getOrElse("TRAVIS_TAG", "1.0.0-SNAPSHOT")) match {
+  case "" => "1.0.0-SNAPSHOT"
+  case v => v
+}
+
+version := revision
 
 lazy val root = (project in file(".")).enablePlugins(PlayScala, SbtNativePackager)
 
@@ -14,6 +19,7 @@ resolvers += Resolver.bintrayRepo("sergkh", "maven")
 resolvers += Resolver.jcenterRepo
 
 packageName in Docker := name.value
+maintainer in Docker := "yarosman"
 version in Docker := version.value
 dockerExposedPorts in Docker := Seq(9000)
 dockerBaseImage := "davidcaste/alpine-java-unlimited-jce:jdk8"

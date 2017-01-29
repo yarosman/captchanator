@@ -35,8 +35,7 @@ class CaptchaController @Inject()(appConf: ApplicationConfig,
 
   def solve(challenge: String): Action[JsValue] = Action.async(parse.json) { r =>
     val answer = (r.body \ "answer").as[String]
-    val ip = (r.body \ "ip").asOpt[String].getOrElse("")
-
+    val ip = r.clientIp
     captchaService.solve(challenge, answer, ip).map {
       case true =>
         log.info("Ok: " + challenge + ", ip: " + ip + ", answer: " + answer)

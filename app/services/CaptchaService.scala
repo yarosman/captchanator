@@ -25,20 +25,19 @@ class CaptchaService @Inject()(appConf: ApplicationConfig)(implicit ctx: Executi
 
   private val redis = RedisClient(appConf.redisHost)
 
-  def create(code: String, ttl: Int, ip: String): Future[Boolean] = {
+  def create(challenge: String, ttl: Int, ip: String): Future[Boolean] = {
     val captcha = buildCaptcha
 
-    val outFile = new File(appConf.imageFolder.resolve(code + ".png"))
-    log.info("Create: " + code + ", ip: " + ip + ", ttl: " + ttl + ", im: " + outFile.getCanonicalPath)
+    val outFile = new File(appConf.imageFolder.resolve(challenge + ".png"))
+    log.info("Create: " + challenge + ", ip: " + ip + ", ttl: " + ttl + ", im: " + outFile.getCanonicalPath)
 
     ImageIO.write(captcha.getImage, "png", outFile)
 
-    redis.setAsync(appConf.prefix + ip + "-" + code, captcha.getAnswer, ttl)/*.onFailure {
+    redis.setAsync(appConf.prefix + ip + "-" + challenge, captcha.getAnswer, ttl)/*.onFailure {
       case e: Exception => log.error("Error creating captcha image: " + code, e)
     }*/
   }
 
-  //TODO: remove ip from captcha
   def solve(challenge: String, answer: String, ip: String): Future[Boolean] = {
     val key = appConf.prefix + ip + "-" + challenge
 
