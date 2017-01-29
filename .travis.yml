@@ -19,6 +19,11 @@ before_cache:
 services:
   - docker
 
+before_script:
+  - echo $TRAVIS_BRANCH
+  - echo $TRAVIS_PULL_REQUEST
+  - echo $TRAVIS_TAG
+
 script:
   - sbt test docker:publishLocal
 
